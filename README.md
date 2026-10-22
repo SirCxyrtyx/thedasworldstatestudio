@@ -1,0 +1,1 @@
+Thedas World State Studio is a program designed to mimic (in appearance) the Dragon Age Keep tapestry, for the purpose of creating Default World States with custom histories for import into Dragon Age Inquisition.
