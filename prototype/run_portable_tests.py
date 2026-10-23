@@ -13,7 +13,7 @@ MODULES = ('test_save_import', 'test_save_import_companions', 'test_dao_import',
 WORKFLOWS = (('test_export_ui.cjs',), ('test_save_import_ui.cjs',),
              ('test_dao_import_ui.cjs',), ('test_dao_import_ui.cjs', 'da2'),
              ('test_profile_management_ui.cjs',), ('test_search_filters.cjs',),
-             ('test_window_events.cjs',), ('test_editor_navigation.cjs',),
+             ('test_editor_navigation.cjs',),
              ('test_icon_selection_ui.cjs',), ('test_new_world_state_ui.cjs',), ('test_history_ui.cjs',),
              ('test_save_persistence_ui.cjs',))
 

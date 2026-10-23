@@ -32,15 +32,15 @@ function review(target = null, policy = 'missing') {
       {title: 'Romance', choice_id: 'dao.warden_romance', status: policy === 'missing' ? 'kept' : 'replaced',
         before_label: 'No romance', incoming_label: 'Alistair', after_label: 'Alistair'}] : []};
 }
-const context = vm.createContext({$, state, token: 'token',
+const context = vm.createContext({$, state,
   Option: function(text, value) { this.textContent = text; this.value = value; },
   el: (_tag, _class, text) => Object.assign(element(), {textContent: text}),
   busy: value => { state.busy = value; }, ensureLeave: async () => true,
   toast: (...args) => calls.push(['toast', ...args]),
-  fetch: async (path, options) => {
-    assert.equal(path, game === 'dao' ? '/api/dao-save-import/preview' : '/api/save-import/preview'); assert.equal(options.headers.Authorization, 'Bearer token');
+  backend: {fetch: async (path, options) => {
+    assert.equal(path, game === 'dao' ? '/api/dao-save-import/preview' : '/api/save-import/preview'); assert.equal(options.headers['Content-Type'], 'application/octet-stream');
     return {ok: true, json: async () => review()};
-  },
+  }},
   api: async (path, data) => {
     calls.push([path, JSON.parse(JSON.stringify(data))]);
     if (path.endsWith('/plan')) {

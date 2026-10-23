@@ -26,7 +26,6 @@ const context = vm.createContext({$, state, Option: function(text, value) { retu
   api: async (path, payload) => {
     calls.push([path, payload]);
     if (failure) throw new Error('World state changed; reopen it');
-    if (path === '/api/open-world-state-folder') return {opened: true};
     if (path === '/api/deleted-profiles') return deleted;
     if (path === '/api/profile/delete') { deleted.push(state.profiles.find(p => p.profile_id === payload.profile_id)); return {deleted: true}; }
     if (path === '/api/profile/restore') { const restored = deleted.find(p => p.profile_id === payload.profile_id); deleted = []; return restored; }
@@ -38,7 +37,6 @@ const context = vm.createContext({$, state, Option: function(text, value) { retu
   },
 });
 vm.runInContext(source.slice(source.indexOf('function renderManagement()'), source.indexOf("$('open-profile').onclick")), context);
-vm.runInContext(source.slice(source.indexOf("$('open-world-state-folder').onclick"), source.indexOf("$('view-options').onclick")), context);
 (async () => {
   $('profile-menu').onclick();
   assert.equal($('open-profile-select').children.length, 2);
@@ -99,14 +97,5 @@ vm.runInContext(source.slice(source.indexOf("$('open-world-state-folder').onclic
   $('empty-deleted-profiles').onclick(); await $('confirm-purge-profiles').onclick();
   assert.equal($('empty-deleted-profiles').disabled, true);
   assert.equal(deleted.length, 0);
-  calls = []; failure = false;
-  await $('open-world-state-folder').onclick();
-  assert.equal(calls[0][0], '/api/open-world-state-folder');
-  assert.equal(JSON.stringify(calls[0][1]), '{}');
-  assert.equal(calls.length, 1, 'opening the folder must not save or change the current World State');
-  failure = true;
-  await $('open-world-state-folder').onclick();
-  assert.equal(calls.at(-1)[0], 'toast', 'folder-open failures remain visible');
-  assert.equal(calls.at(-1)[3], true);
-  console.log('PASS: recoverable delete/restore, permanent-delete cancel, reviewed empty list, stale failure, active-draft preservation and folder action');
+  console.log('PASS: recoverable delete/restore, permanent-delete cancel, reviewed empty list, stale failure and active-draft preservation');
 })().catch(error => { console.error(error); process.exitCode = 1; });

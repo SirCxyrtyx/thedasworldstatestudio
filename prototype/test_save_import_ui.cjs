@@ -23,13 +23,13 @@ const result = {import_id: 'review-id', suggested_name: 'Marian', character: 'Ma
 const calls = [], state = {draft: {choices: {'dao.dagna': 'helped'}, mode: 'keep'}, busy: false, profiles: [], saveImport: null, showImportReview: false};
 const original = JSON.stringify(state.draft);
 let fetchCount = 0, loadCount = 0, allowLeave = true;
-const context = vm.createContext({$, state, token: 'token',
+const context = vm.createContext({$, state,
   Option: function(text, value) { this.textContent = text; this.value = value; },
   el: (_tag, _class, text) => Object.assign(element(), {textContent: text}),
   busy: value => { state.busy = value; },
   toast: (...args) => calls.push(['toast', ...args]),
   ensureLeave: async () => allowLeave,
-  fetch: async (_url, options) => { fetchCount++; assert.equal(options.body.name, 'Test.das'); return {ok: true, json: async () => result}; },
+  backend: {fetch: async (_url, options) => { fetchCount++; assert.equal(options.body.name, 'Test.das'); return {ok: true, json: async () => result}; }},
   api: async (path, data) => { calls.push([path, data]); return {profile_id: 'new', choices: {'da2.bethany_fate': 'alive_unspecified'}}; },
   updateProfile: p => calls.push(['update', p]),
   loadProfile: async p => { loadCount++; state.draft = p; },

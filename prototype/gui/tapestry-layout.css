@@ -1,14 +1,14 @@
 /* Tapestry shell. Shared dialogs and form components remain in style.css. */
 @font-face {
   font-family: 'Keep Inquisition';
-  src: url('/fonts/Inquisition.woff') format('woff');
+  src: url('fonts/Inquisition.woff') format('woff');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Keep Inquisition SC';
-  src: url('/fonts/InquisitionSc.woff') format('woff');
+  src: url('fonts/InquisitionSc.woff') format('woff');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -16,7 +16,7 @@
 :root {
   --bg: #111211;
   --panel: #1b1d1b;
-  --header-art: url('/interface-art/main-nav-bg.png');
+  --header-art: url('interface-art/main-nav-bg.png');
   --serif: 'Keep Inquisition', Georgia, 'Palatino Linotype', serif;
   --display: 'Keep Inquisition SC', Georgia, serif;
 }
@@ -30,7 +30,7 @@ main {
   width: 100%;
   min-height: 100svh;
   background-color: #171816;
-  background-image: url('/interface-art/bg-eye.jpg'), url('/interface-art/bg-tile.jpg');
+  background-image: url('interface-art/bg-eye.jpg'), url('interface-art/bg-tile.jpg');
   background-repeat: no-repeat, repeat;
   background-position: center 132px, center top;
   background-size: min(100vw, 1800px) auto, 155px auto;
@@ -41,7 +41,7 @@ main::before {
   inset: 132px 0 0;
   z-index: -1;
   pointer-events: none;
-  background-image: url('/interface-art/dragons-bg.png'), url('/interface-art/dragons-bg.png');
+  background-image: url('interface-art/dragons-bg.png'), url('interface-art/dragons-bg.png');
   background-position: center top, center bottom;
   background-repeat: no-repeat;
   background-size: 100% auto;

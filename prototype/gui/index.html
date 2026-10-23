@@ -5,12 +5,13 @@
   <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Thedas World State Studio</title>
-  <link rel="icon" type="image/png" sizes="16x16" href="/interface-art/favicon.png">
-  <link rel="stylesheet" href="/style.css">
-  <link rel="stylesheet" href="/tapestry-layout.css">
-  <link rel="stylesheet" href="/keep-interactions.css">
-  <script src="/choice-controls.js" defer></script>
-  <script src="/app.js" defer></script>
+  <link rel="icon" type="image/png" sizes="16x16" href="interface-art/favicon.png">
+  <link rel="stylesheet" href="style.css?v=__BUILD_ID__">
+  <link rel="stylesheet" href="tapestry-layout.css?v=__BUILD_ID__">
+  <link rel="stylesheet" href="keep-interactions.css?v=__BUILD_ID__">
+  <script src="backend.js?v=__BUILD_ID__" defer></script>
+  <script src="choice-controls.js?v=__BUILD_ID__" defer></script>
+  <script src="app.js?v=__BUILD_ID__" defer></script>
 </head>
 <body>
   <svg class="symbols" aria-hidden="true"><defs>
@@ -37,7 +38,6 @@
       <div class="saved-heading"><p class="eyebrow">YOUR WORLD STATES</p><button id="new-sidebar" class="icon-button" aria-label="Create World State"><svg><use href="#i-plus"/></svg></button></div>
       <div id="profile-list" class="profile-list"><p class="side-hint">Your saved histories will appear here.</p></div>
       <button id="import-profile" class="sidebar-link">Import a World State <span>↗</span></button>
-      <button id="open-world-state-folder" class="sidebar-link">Open World State folder <span>↗</span></button>
       <div class="side-bottom"><small class="artwork-credit">Original artwork © EA / BioWare<br>Unofficial fan project</small></div>
     </aside>
     <input type="file" id="import-file" accept=".json,application/json" hidden>
@@ -128,7 +128,6 @@
     <h2 id="fbmod-export-title">Export World State</h2><form id="fbmod-export-form">
       <label class="field-label" for="fbmod-title">Mod title</label><input id="fbmod-title" class="text-input" maxlength="160" required>
       <label class="field-label" for="fbmod-filename">File name</label><input id="fbmod-filename" class="text-input" maxlength="160" required>
-      <label class="field-label" for="fbmod-directory">Export folder</label><div class="export-folder-row"><input id="fbmod-directory" class="text-input" required><button id="browse-fbmod-directory" type="button" class="button secondary">Browse…</button></div>
       <button id="export-settings-link" type="button" class="text-button fbmod-settings-link">FBMOD settings</button>
       <p id="fbmod-export-error" class="form-error" role="alert" hidden></p>
       <div class="form-buttons"><button type="button" class="button subtle" data-close="fbmod-export-dialog">Cancel</button><button type="submit" class="button primary">Export FBMOD</button></div>
@@ -159,7 +158,7 @@
   <dialog id="delete-profile-dialog" class="small-dialog" aria-labelledby="delete-profile-title">
     <div class="dialog-bar"><span class="eyebrow accent">WORLD STATES</span><button class="icon-button" data-close="delete-profile-dialog" aria-label="Cancel deletion"><svg><use href="#i-close"/></svg></button></div>
     <h2 id="delete-profile-title">Delete this World State?</h2>
-    <p id="delete-profile-name"></p><p>You can restore it and all its saved revisions from Deleted World States. Exported files will stay in their folders.</p>
+    <p id="delete-profile-name"></p><p>You can restore it and all its saved revisions from Deleted World States. Downloaded FBMODs are not affected.</p>
     <p id="delete-profile-error" class="form-error" role="alert" hidden></p>
     <div class="form-buttons"><button type="button" class="button subtle" data-close="delete-profile-dialog">Cancel</button><button id="confirm-delete-profile" class="button secondary danger">Delete World State</button></div>
   </dialog>

@@ -9,3 +9,7 @@ prototype/output/
 prototype/profile-data/
 prototype/gui-logs/
 *.log
+
+# Web build
+node_modules/
+_site/

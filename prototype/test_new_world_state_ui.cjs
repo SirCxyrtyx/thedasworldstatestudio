@@ -13,21 +13,21 @@ const original = {name: 'Keep my edits', choices: {'da2.hawke_romance': 'anders'
 const state = {draft: original, profiles: [], busy: false, showImportReview: false, view: 'quick',
   boot: {default_preset: 'default', presets: [{id: 'author', label: 'Authored'}, {id: 'default', label: 'Original game defaults'}]}};
 let allowLeave = true, guards = 0, fetches = 0, invalid = false, loads = 0;
-const context = vm.createContext({$, state, token: 'session',
+const context = vm.createContext({$, state,
   Option: function(text, value) { this.textContent = text; this.value = value; },
   el: (_tag, _class, text) => Object.assign(element(), {textContent: text}),
   setMenu() {}, busy(value) { state.busy = value; },
   async ensureLeave() { guards++; return allowLeave; }, async save() { return true; },
   async newDraft(name, preset) { calls.push(['new', name, preset]); },
   toast(...args) { calls.push(['toast', ...args]); },
-  fetch: async (path, options) => {
-    fetches++; assert.equal(options.headers.Authorization, 'Bearer session');
+  backend: {fetch: async (path, options) => {
+    fetches++; assert.equal(options.headers['Content-Type'], 'application/octet-stream');
     const game = path.includes('dao-save') ? 'dao' : 'da2';
     if (invalid) return {ok: false, json: async () => ({error: 'Not a supported save.'})};
     return {ok: true, json: async () => ({game, import_id: game + '-review', suggested_name: 'Imported ' + game,
       character: 'Hero', stage: 'Completed', counts: {dao: {recovered: 1, unresolved: 0}, da2: {recovered: 1, unresolved: 0}},
       recognized: [], unresolved: [], changes: [], restriction_message: 'Preserved', restriction_reasons: [], save_sha256: 'abc'})};
-  },
+  }},
   api: async (path, data) => {
     calls.push([path, JSON.parse(JSON.stringify(data))]);
     if (path.endsWith('/commit')) return {profile_id: 'new', name: data.name, revision: 1};

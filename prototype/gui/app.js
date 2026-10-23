@@ -4,64 +4,10 @@ const $ = id => document.getElementById(id);
 const clone = value => JSON.parse(JSON.stringify(value));
 const svgNS = 'http://www.w3.org/2000/svg';
 const gameNames = {dao: 'Dragon Age: Origins', da2: 'Dragon Age II'};
-let token = new URLSearchParams(location.hash.slice(1)).get('session');
-try {
-  if (token) sessionStorage.setItem('editor-session', token);
-  else token = sessionStorage.getItem('editor-session');
-  if (token) history.replaceState(null, '', location.pathname);
-} catch (_) { /* The session fragment remains a fallback if storage is unavailable. */ }
-
-// Each document has its own identity, including reloads and duplicated tabs.
-// Sequence numbers keep a late close/open request from reversing newer state.
-const editorClient = crypto.randomUUID();
-let windowSequence = 0, windowHidden = false, windowConnection;
-function notifyWindow(event) {
-  if (!token) return Promise.resolve();
-  return fetch('/api/window', {method: 'POST', keepalive: true,
-    headers: {Authorization: 'Bearer ' + token, 'Content-Type': 'application/json'},
-    body: JSON.stringify({client_id: editorClient, event, sequence: ++windowSequence})
-  }).then(response => {
-    if (!response.ok) throw new Error('The editor is closing. Reopen the application.');
-  });
-}
-async function openWindow() {
-  await notifyWindow('open');
-  if (windowHidden) return;
-  windowConnection?.abort();
-  const connection = new AbortController();
-  windowConnection = connection;
-  const sequence = windowSequence;
-  // This streaming connection also detects closes when the browser skips
-  // pagehide. The token stays in the header, never the URL or request log.
-  (async () => {
-    try {
-      const response = await fetch(`/api/window-stream?client_id=${editorClient}&sequence=${sequence}`,
-        {headers: {Authorization: 'Bearer ' + token}, signal: connection.signal});
-      if (!response.ok) throw new Error('Window connection unavailable');
-      const reader = response.body.getReader();
-      while (!(await reader.read()).done) { /* Drain the local connection. */ }
-    } catch (_) { /* Reconnect below if this document is still open. */ }
-    finally {
-      if (!windowHidden && windowConnection === connection)
-        setTimeout(() => { if (!windowHidden) openWindow().catch(() => {}); }, 250);
-    }
-  })();
-}
-// pagehide runs after a close has been accepted, unlike beforeunload, which
-// also runs when the user cancels the unsaved-changes prompt.
-window.addEventListener('pagehide', () => {
-  windowHidden = true;
-  windowConnection?.abort();
-  notifyWindow('close').catch(() => {});
-});
-window.addEventListener('pageshow', event => {
-  if (event.persisted) { windowHidden = false; openWindow().catch(() => {}); }
-});
-
 const state = {boot: null, profiles: [], draft: null, saved: null, preview: null,
   game: 'dao', category: null, view: 'tapestry', busy: false, touched: false, menuOpen: false,
   previewPending: true, previewError: null, activeChoice: null, candidateAnswer: null, nameAction: 'new',
-  fbmodIcon: null, presetIcon: null, iconLoading: false, showDiagnostics: false, showImportReview: false, exportDirectory: null,
+  fbmodIcon: null, presetIcon: null, iconLoading: false, showDiagnostics: false, showImportReview: false,
   searchEnabled: false, searchQuery: '', unchosenOnly: false, reviewRemaining: false,
   saveImport: null, saveImportNewName: null, deletingProfile: null,
   deletedProfiles: [], purgeProfiles: null};
@@ -82,12 +28,12 @@ function icon(name) {
   return svg;
 }
 async function api(path, body) {
-  const options = {headers: {Authorization: 'Bearer ' + token}};
+  const options = {};
   if (body !== undefined) Object.assign(options, {method: 'POST', body: JSON.stringify(body),
-    headers: {...options.headers, 'Content-Type': 'application/json'}});
+    headers: {'Content-Type': 'application/json'}});
   let response;
-  try { response = await fetch(path, options); }
-  catch (_) { throw new Error('The editor has stopped responding. Your unsaved choices are still in this window. Reopen the launcher if needed.'); }
+  try { response = await backend.fetch(path, options); }
+  catch (_) { throw new Error('The editor has stopped responding. Your unsaved choices are still in this window. Export them as World State JSON or reload the page.'); }
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || 'The action could not be completed.');
   return result;
@@ -661,7 +607,6 @@ function openExportDialog() {
   let filename = state.draft.name.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-').replace(/[. ]+$/g, '').trim().slice(0, 120) || 'World State';
   if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(filename)) filename = 'World State - ' + filename;
   $('fbmod-filename').value = /\.fbmod$/i.test(filename) ? filename : filename + '.fbmod';
-  $('fbmod-directory').value = state.exportDirectory || state.boot.export_directory;
   $('fbmod-export-error').hidden = true;
   $('fbmod-export-dialog').showModal(); $('fbmod-title').focus();
 }
@@ -678,14 +623,15 @@ async function exportMod() {
   busy(true);
   try {
     const result = await api('/api/export', {profile_id: state.draft.profile_id, revision: state.draft.revision,
-      title: $('fbmod-title').value.trim(), filename: $('fbmod-filename').value.trim(),
-      directory: $('fbmod-directory').value.trim()});
-    state.exportDirectory = result.directory;
+      title: $('fbmod-title').value.trim(), filename: $('fbmod-filename').value.trim()});
+    const file = data => new Blob([Uint8Array.from(atob(data), character => character.charCodeAt(0))],
+      {type: 'application/octet-stream'});
+    downloadBlob(file(result.files.mod), result.name);
     $('fbmod-export-dialog').close();
-    toast('FBMOD saved · Revision ' + result.revision,
-      result.path + (state.showDiagnostics ? '\nReport: ' + result.report_path : '') +
+    toast('FBMOD downloaded · Revision ' + result.revision,
+      result.name + (state.showDiagnostics ? '\nSHA-256: ' + result.sha256 : '') +
         (result.warnings?.length ? '\n' + result.warnings.join('\n') : ''), false,
-      [{label: 'Open export folder', run: () => api('/api/open-export-folder', {download_id: result.download_id})}]);
+      [{label: 'Download report', run: () => downloadBlob(file(result.files.report), result.report_name)}]);
   } catch (error) { $('fbmod-export-error').textContent = error.message; $('fbmod-export-error').hidden = false; }
   finally { busy(false); }
 }
@@ -745,8 +691,6 @@ async function nameDialog(action) {
 
 async function init() {
   try {
-    if (!token) throw new Error('Open Thedas World State Studio using its launcher to create a local session.');
-    await openWindow();
     state.boot = await api('/api/bootstrap'); state.profiles = state.boot.profiles;
     document.querySelector('.build-tag').textContent = state.boot.app_version || 'PREVIEW';
     try { setEditorView(localStorage.getItem('the-studio-quick-editor') === 'true' ? 'quick' : 'tapestry'); } catch (_) {}
@@ -754,7 +698,6 @@ async function init() {
     if (mostRecent) await loadProfile(mostRecent); else await newDraft();
     $('loading').hidden = true;
     if (state.boot.storage_warnings?.length) toast('Some World State folders could not be reorganized', state.boot.storage_warnings.join('\n'), true);
-    setInterval(() => { api('/api/ping').catch(() => {}); }, 15000);
   } catch (error) {
     $('loading').querySelector('p').textContent = error.message;
     $('loading').classList.add('failed');
@@ -771,16 +714,6 @@ $('profile-name').oninput = event => {
 $('save-profile').onclick = save;
 $('export-mod').onclick = openExportDialog;
 $('fbmod-export-form').onsubmit = event => { event.preventDefault(); exportMod(); };
-$('browse-fbmod-directory').onclick = async () => {
-  const button = $('browse-fbmod-directory'); button.disabled = true;
-  $('fbmod-export-error').hidden = true;
-  try {
-    const result = await api('/api/choose-export-folder', {directory: $('fbmod-directory').value.trim() || state.boot.export_directory});
-    if (result.directory) $('fbmod-directory').value = result.directory;
-  } catch (error) {
-    $('fbmod-export-error').textContent = error.message; $('fbmod-export-error').hidden = false;
-  } finally { button.disabled = false; }
-};
 $('drawer-fbmod-settings').onclick = openFbmodSettings;
 $('export-settings-link').onclick = openFbmodSettings;
 function cancelIconRead() {
@@ -1044,8 +977,8 @@ async function chooseSaveImport(event, game, {leaveChecked = false, errorId = nu
   }
   busy(true);
   try {
-    const response = await fetch(game === 'dao' ? '/api/dao-save-import/preview' : '/api/save-import/preview', {method: 'POST',
-      headers: {Authorization: 'Bearer ' + token, 'Content-Type': 'application/octet-stream'}, body: file});
+    const response = await backend.fetch(game === 'dao' ? '/api/dao-save-import/preview' : '/api/save-import/preview', {method: 'POST',
+      headers: {'Content-Type': 'application/octet-stream'}, body: file});
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || 'The save could not be read.');
     state.saveImport = result; state.saveImportNewName = result.suggested_name;
@@ -1213,10 +1146,6 @@ $('close-menu').onclick = () => setMenu(false);
 $('menu-backdrop').onclick = () => setMenu(false);
 $('drawer-tapestry').onclick = () => { setMenu(false); setEditorView('tapestry'); navigateCategory(null); };
 $('drawer-profiles').onclick = () => $('profile-menu').click();
-$('open-world-state-folder').onclick = async () => {
-  try { await api('/api/open-world-state-folder', {}); }
-  catch (error) { toast('Could not open World State folder', error.message, true); }
-};
 $('view-options').onclick = () => {
   setGameMenu(false);
   const open = $('options-panel').hidden;
